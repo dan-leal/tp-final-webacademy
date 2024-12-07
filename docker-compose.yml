@@ -1,0 +1,71 @@
+services:
+  # Serviço do Banco de Dados
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: webacademy
+      MYSQL_DATABASE: books_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: webacademy
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3309:3306"
+    networks:
+      - web
+
+  # Serviço do Backend
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: user
+      DB_PASSWORD: webacademy
+      DB_NAME: books_db
+    volumes:
+      - ./backend/logs:/log
+    ports:
+      - "4446:4444"
+    depends_on:
+      - mysql
+    networks:
+      - web
+
+  # Serviço do Frontend
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "8005:80"
+    depends_on:
+      - backend
+    networks:
+      - web
+
+  # Serviço do PHPMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: user
+      PMA_PASSWORD: webacademy
+    ports:
+      - "8088:80"
+    networks:
+      - web
+
+# Volumes para persistência de dados
+volumes:
+  mysql_data:
+
+# Redes para comunicação entre os contêineres
+networks:
+  web:
+    driver: bridge
